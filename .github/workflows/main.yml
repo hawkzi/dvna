@@ -1,0 +1,47 @@
+name: workflow
+ 
+on:
+  push:
+    branches:
+      - master
+ 
+jobs:
+  snyk-code:
+    environment: snyk
+    runs-on: ubuntu-latest
+ 
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+ 
+      - name: Install dependencies (ignore native build)
+        run: npm install --ignore-scripts
+ 
+      - uses: snyk/actions/setup@master
+ 
+      - name: Configure Snyk endpoint
+        run: snyk config set endpoint=https://api.us.snyk.io
+ 
+      - name: Authenticate with Snyk
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+ 
+      - name: Snyk Code Test
+        continue-on-error: true
+        run: snyk code test
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+ 
+      - name: Snyk Open Source Test (SCA)
+        continue-on-error: true
+        run: snyk test
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+ 
+      - name: Snyk IaC Test
+        continue-on-error: true
+        run: snyk iac test
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
